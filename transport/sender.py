@@ -1,8 +1,9 @@
-#!/usr/bin/env -S python3 -u
+import socket
+import json
+import select
+import sys
+from transport.configs import DATA_SIZE
 
-import argparse, socket, time, json, select, struct, sys, math
-
-DATA_SIZE = 1375
 
 class Sender:
     def __init__(self, host, port):
@@ -18,11 +19,13 @@ class Sender:
         sys.stderr.flush()
 
     def send(self, message):
-        self.socket.sendto(json.dumps(message).encode('utf-8'), (self.host, self.remote_port))
+        self.socket.sendto(json.dumps(message).encode(
+            'utf-8'), (self.host, self.remote_port))
 
     def run(self):
         while True:
-            sockets = [self.socket, sys.stdin] if not self.waiting else [self.socket]
+            sockets = [self.socket, sys.stdin] if not self.waiting else [
+                self.socket]
 
             socks = select.select(sockets, [], [], 0.1)[0]
             for conn in socks:
@@ -38,17 +41,9 @@ class Sender:
                         self.log("All done!")
                         sys.exit(0)
 
-                    msg = { "type": "msg", "data": data }
+                    msg = {"type": "msg", "data": data}
                     self.log("Sending message '%s'" % msg)
                     self.send(msg)
                     self.waiting = True
 
         return
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='send data')
-    parser.add_argument('host', type=str, help="Remote host to connect to")
-    parser.add_argument('port', type=int, help="UDP port number to connect to")
-    args = parser.parse_args()
-    sender = Sender(args.host, args.port)
-    sender.run()

@@ -1,0 +1,10 @@
+#!/usr/bin/env -S python3 -u
+
+import argparse
+from transport.receiver import Receiver
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='receive data')
+    args = parser.parse_args()
+    sender = Receiver()
+    sender.run()

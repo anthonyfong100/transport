@@ -1,6 +1,8 @@
-#!/usr/bin/env -S python3 -u
+import socket
+import json
+import select
+import sys
 
-import argparse, socket, time, json, select, struct, sys, math
 
 class Receiver:
     def __init__(self):
@@ -13,7 +15,8 @@ class Receiver:
         self.remote_port = None
 
     def send(self, message):
-        self.socket.sendto(json.dumps(message).encode('utf-8'), (self.remote_host, self.remote_port))
+        self.socket.sendto(json.dumps(message).encode(
+            'utf-8'), (self.remote_host, self.remote_port))
 
     def log(self, message):
         sys.stderr.write(message + "\n")
@@ -37,13 +40,4 @@ class Receiver:
                 print(msg["data"], end='', flush=True)
 
                 # Always send back an ack
-                self.send({ "type": "ack" })
-
-
-        return
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='receive data')
-    args = parser.parse_args()
-    sender = Receiver()
-    sender.run()
+                self.send({"type": "ack"})
