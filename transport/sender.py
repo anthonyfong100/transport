@@ -3,7 +3,7 @@ import json
 import select
 import sys
 import time
-from transport.configs import DATA_SIZE
+from transport.configs import DATA_SIZE, STARTING_SEQ_NUMBER, DEFAULT_RTT_SECOND
 from transport.datagram import MessageDatagram, AckDatagram
 from typing import List
 
@@ -18,7 +18,7 @@ class Sender:
         self.max_window_size = max_window_size
         self.send_queue: List[MessageDatagram] = []
         self.send_buffer: List[MessageDatagram] = []
-        self.seq_number = 0
+        self.seq_number = STARTING_SEQ_NUMBER
         self.should_terminate = False
 
     def log(self, message):
@@ -31,7 +31,7 @@ class Sender:
         return seq_number
 
     def send(self, msg_datagram: MessageDatagram):
-        self.log("Sending message '%s'" % msg_datagram.serialize())
+        self.log(f"Sending data message {msg_datagram.seq_number}")
         msg_datagram.send_time = time.time()
         self.socket.sendto(json.dumps(msg_datagram.serialize()).encode(
             'utf-8'), (self.host, self.remote_port))
@@ -50,6 +50,8 @@ class Sender:
                 k, _ = conn.recvfrom(65535)
                 msg = json.loads(k.decode('utf-8'))
                 ack_datagram = AckDatagram(int(msg["seq_number"]))
+                self.log("Received acknowledgement message %s" %
+                         ack_datagram.seq_number)
 
                 # remove message_datagram from send queue based on seq number
                 self._remove_send_queue_by_seq_num(ack_datagram.seq_number)
@@ -63,6 +65,11 @@ class Sender:
 
                 datagram = MessageDatagram(data, self._get_seq_number())
                 self.send_buffer.append(datagram)
+
+    # @staticmethod
+    def _should_send_msg_datagram(self, msg_datagram: MessageDatagram):
+        # send a datagram if not send before or if expires
+        return msg_datagram.send_time is None or time.time() > msg_datagram.send_time + DEFAULT_RTT_SECOND
 
     def run(self):
         while True:
@@ -78,5 +85,5 @@ class Sender:
 
             # send message in buffer
             for msg_datagram in self.send_queue:
-                if msg_datagram.send_time is None:
+                if self._should_send_msg_datagram(msg_datagram):
                     self.send(msg_datagram)
