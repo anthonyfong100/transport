@@ -14,6 +14,7 @@ class Receiver:
 
         self.remote_host = None
         self.remote_port = None
+        self.received_seq_numbers = set()
 
     def send(self, ack_datagram: AckDatagram):
         self.socket.sendto(json.dumps(ack_datagram.serialize()).encode(
@@ -22,6 +23,9 @@ class Receiver:
     def log(self, message):
         sys.stderr.write(message + "\n")
         sys.stderr.flush()
+
+    def is_duplicate_message(self, seq_num: int) -> bool:
+        return seq_num in self.received_seq_numbers
 
     def run(self):
         while True:
@@ -39,11 +43,12 @@ class Receiver:
                     msg["data"], int(msg["seq_number"]))
                 self.log("Received data message %s" % message_datagram.data)
 
-                # Print out the data to stdout
-                print(message_datagram.data, end='', flush=True)
+                if not self.is_duplicate_message(message_datagram.seq_number):
+                    self.received_seq_numbers.add(message_datagram.seq_number)
+                    print(message_datagram.data, end='', flush=True)
 
-                ack_datagram: AckDatagram = AckDatagram(
-                    message_datagram.seq_number)
+                    ack_datagram: AckDatagram = AckDatagram(
+                        message_datagram.seq_number)
 
-                # Always send back an ack
-                self.send(ack_datagram)
+                    # Always send back an ack
+                    self.send(ack_datagram)
