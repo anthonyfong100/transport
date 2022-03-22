@@ -2,11 +2,12 @@
 
 import argparse
 from transport.sender import Sender
+from transport.configs import MAX_WINDOW_SIZE
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='send data')
     parser.add_argument('host', type=str, help="Remote host to connect to")
     parser.add_argument('port', type=int, help="UDP port number to connect to")
     args = parser.parse_args()
-    sender = Sender(args.host, args.port)
+    sender = Sender(args.host, args.port, MAX_WINDOW_SIZE)
     sender.run()

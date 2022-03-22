@@ -2,6 +2,7 @@ import socket
 import json
 import select
 import sys
+from transport.datagram import AckDatagram, MessageDatagram
 
 
 class Receiver:
@@ -14,8 +15,8 @@ class Receiver:
         self.remote_host = None
         self.remote_port = None
 
-    def send(self, message):
-        self.socket.sendto(json.dumps(message).encode(
+    def send(self, ack_datagram: AckDatagram):
+        self.socket.sendto(json.dumps(ack_datagram.serialize()).encode(
             'utf-8'), (self.remote_host, self.remote_port))
 
     def log(self, message):
@@ -34,10 +35,15 @@ class Receiver:
                     self.remote_port = addr[1]
 
                 msg = json.loads(data.decode('utf-8'))
-                self.log("Received data message %s" % msg)
+                message_datagram: MessageDatagram = MessageDatagram(
+                    msg["data"], int(msg["seq_number"]))
+                self.log("Received data message %s" % message_datagram.data)
 
                 # Print out the data to stdout
-                print(msg["data"], end='', flush=True)
+                print(message_datagram.data, end='', flush=True)
+
+                ack_datagram: AckDatagram = AckDatagram(
+                    message_datagram.seq_number)
 
                 # Always send back an ack
-                self.send({"type": "ack"})
+                self.send(ack_datagram)
