@@ -66,8 +66,8 @@ class Sender:
                 datagram = MessageDatagram(data, self._get_seq_number())
                 self.send_buffer.append(datagram)
 
-    # @staticmethod
-    def _should_send_msg_datagram(self, msg_datagram: MessageDatagram):
+    @staticmethod
+    def _should_send_msg_datagram(msg_datagram: MessageDatagram):
         # send a datagram if not send before or if expires
         return msg_datagram.send_time is None or time.time() > msg_datagram.send_time + DEFAULT_RTT_SECOND
 

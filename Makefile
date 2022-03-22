@@ -15,3 +15,5 @@ test-4:
 	./run configs/4-1-drops.conf
 	./run configs/4-2-more-drops.conf
 
+unit-test:
+	python -m unittest -v
