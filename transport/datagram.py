@@ -1,6 +1,3 @@
-from tabnanny import check
-
-
 class MessageDatagram:
     def __init__(self, data, seq_number, checksum=None):
         self.data = data
