@@ -7,6 +7,8 @@ from transport.configs import DATA_SIZE, STARTING_SEQ_NUMBER, DEFAULT_RTT_SECOND
 from transport.datagram import MessageDatagram, AckDatagram
 from typing import List
 
+from transport.utils import decode_bytes_to_json
+
 
 class Sender:
     def __init__(self, host, port, max_window_size):
@@ -31,7 +33,7 @@ class Sender:
         return seq_number
 
     def send(self, msg_datagram: MessageDatagram):
-        self.log(f"Sending data message {msg_datagram.seq_number}")
+        self.log(f"Sending data message {msg_datagram.serialize()}")
         msg_datagram.send_time = time.time()
         self.socket.sendto(json.dumps(msg_datagram.serialize()).encode(
             'utf-8'), (self.host, self.remote_port))
@@ -47,14 +49,20 @@ class Sender:
         socks = select.select([self.socket, sys.stdin], [], [], 0.1)[0]
         for conn in socks:
             if conn == self.socket:
-                k, _ = conn.recvfrom(65535)
-                msg = json.loads(k.decode('utf-8'))
-                ack_datagram = AckDatagram(int(msg["seq_number"]))
-                self.log("Received acknowledgement message %s" %
-                         ack_datagram.seq_number)
-
-                # remove message_datagram from send queue based on seq number
-                self._remove_send_queue_by_seq_num(ack_datagram.seq_number)
+                msg_bytes, _ = conn.recvfrom(65535)
+                msg = decode_bytes_to_json(msg_bytes)
+                if msg is not None and AckDatagram.is_valid_serialized_message(msg):
+                    ack_datagram = AckDatagram(
+                        int(msg["seq_number"]), msg["checksum"])
+                    if not ack_datagram.is_corrupted():
+                        self.log(
+                            f"Received acknowledgement message {ack_datagram.seq_number}")
+                        # remove message_datagram from send queue based on seq number
+                        self._remove_send_queue_by_seq_num(
+                            ack_datagram.seq_number)
+                    else:
+                        self.log(
+                            f"Received corrupted acknowledgement message {ack_datagram.seq_number}")
 
             elif conn == sys.stdin:
                 data = sys.stdin.read(DATA_SIZE)

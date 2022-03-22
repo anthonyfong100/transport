@@ -1,18 +1,24 @@
+from typing import Optional
+import hashlib
+
+
 class MessageDatagram:
-    def __init__(self, data, seq_number, checksum=None):
-        self.data = data
-        self.seq_number = seq_number
-        self.send_time = None
+    def __init__(self, data: str, seq_number: int, checksum: Optional[str] = None):
+        self.data: str = data
+        self.seq_number: int = seq_number
+        self.send_time: int = None
+        self.checksum: str
         if checksum is None:
-            self.checksum = hash(self)
+            self.checksum = self.hash()
         else:
             self.checksum = checksum
 
-    def __hash__(self) -> int:
-        return hash(self.data + str(self.seq_number))
+    def hash(self) -> str:
+        hash_key = self.data + str(self.seq_number)
+        return hashlib.md5(hash_key.encode()).hexdigest()
 
     def is_corrupted(self) -> bool:
-        return hash(self) != self.checksum
+        return self.hash() != self.checksum
 
     def serialize(self):
         return {
@@ -22,20 +28,26 @@ class MessageDatagram:
             "checksum": self.checksum
         }
 
+    @staticmethod
+    def is_valid_serialized_message(payload: dict) -> bool:
+        return "data" in payload and "seq_number" in payload and "checksum" in payload and payload["type"] == "msg"
+
 
 class AckDatagram:
-    def __init__(self, seq_number, checksum=None):
-        self.seq_number = seq_number
+    def __init__(self, seq_number: int, checksum: Optional[str] = None):
+        self.seq_number: int = seq_number
+        self.checksum: str
         if checksum is None:
-            self.checksum = hash(self)
+            self.checksum = self.hash()
         else:
             self.checksum = checksum
 
-    def __hash__(self) -> int:
-        return hash(str(self.seq_number))
+    def hash(self) -> str:
+        hash_key = str(self.seq_number)
+        return hashlib.md5(hash_key.encode()).hexdigest()
 
     def is_corrupted(self) -> bool:
-        return hash(self) != self.checksum
+        return self.hash() != self.checksum
 
     def serialize(self):
         return {
@@ -43,3 +55,7 @@ class AckDatagram:
             "seq_number": self.seq_number,
             "checksum": self.checksum
         }
+
+    @staticmethod
+    def is_valid_serialized_message(payload: dict) -> bool:
+        return "seq_number" in payload and "checksum" in payload and payload["type"] == "ack"

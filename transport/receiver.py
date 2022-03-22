@@ -4,6 +4,7 @@ import select
 import sys
 from transport.datagram import AckDatagram, MessageDatagram
 from transport.configs import STARTING_SEQ_NUMBER
+from transport.utils import decode_bytes_to_json
 
 
 class Receiver:
@@ -46,26 +47,36 @@ class Receiver:
                 self.remote_host = addr[0]
                 self.remote_port = addr[1]
 
-            msg = json.loads(data.decode('utf-8'))
-            message_datagram: MessageDatagram = MessageDatagram(
-                msg["data"], int(msg["seq_number"]))
-            return message_datagram
+            msg = decode_bytes_to_json(data)
+            if MessageDatagram.is_valid_serialized_message(msg):
+                message_datagram: MessageDatagram = MessageDatagram(
+                    msg["data"], int(msg["seq_number"]), msg["checksum"])
+                return message_datagram
+            return None
 
     def run(self):
         while True:
-            message_datagram = self.wait_and_read_socket()
-            self.log("Received data message %s" %
-                     message_datagram.seq_number)
+            message_datagram: MessageDatagram = self.wait_and_read_socket()
+            if message_datagram is None:
+                continue
+            if message_datagram.is_corrupted():
+                self.log(
+                    f"Received corrupted message: {message_datagram.serialize()}")
+                self.log(
+                    f"Calculating checksum:{hash(message_datagram)} expected:{message_datagram.checksum}")
+            else:
+                self.log("Received data message %s" %
+                         message_datagram.seq_number)
 
-            ack_datagram: AckDatagram = AckDatagram(
-                message_datagram.seq_number)
+                ack_datagram: AckDatagram = AckDatagram(
+                    message_datagram.seq_number)
 
-            if not self.is_duplicate_message(message_datagram.seq_number):
-                self.received_message_datagrams[message_datagram.seq_number] = message_datagram
+                if not self.is_duplicate_message(message_datagram.seq_number):
+                    self.received_message_datagrams[message_datagram.seq_number] = message_datagram
 
-            # Always send back an ack
-            self.log(
-                f"Sending acknowledgement message {ack_datagram.seq_number}")
-            self.send(ack_datagram)
+                # Always send back an ack
+                self.log(
+                    f"Sending acknowledgement message {ack_datagram.seq_number}")
+                self.send(ack_datagram)
 
             self._print_message_datagram_in_order()

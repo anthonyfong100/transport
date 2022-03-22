@@ -15,5 +15,9 @@ test-4:
 	./run configs/4-1-drops.conf
 	./run configs/4-2-more-drops.conf
 
+test-5:
+	./run configs/5-1-mangle.conf
+	./run configs/5-2-more-mangle.conf
+
 unit-test:
 	python -m unittest -v
