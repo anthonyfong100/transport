@@ -19,5 +19,10 @@ test-5:
 	./run configs/5-1-mangle.conf
 	./run configs/5-2-more-mangle.conf
 
+test-6:
+	./run configs/6-1-low-latency.conf
+	./run configs/6-2-medium-latency.conf
+	./run configs/6-3-high-latency.conf
+
 unit-test:
 	python -m unittest -v

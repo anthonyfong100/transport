@@ -2,12 +2,15 @@
 
 import argparse
 from transport.sender import Sender
-from transport.configs import MAX_WINDOW_SIZE
+from transport.configs import MAX_WINDOW_SIZE, DEFAULT_RTT_SECOND, DEFAULT_RTO_SECOND, RTO_RTT_MULTIPLER, RTT_SMOOTHING_FACTOR
+from transport.rtt_estimator import RttEstimator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='send data')
     parser.add_argument('host', type=str, help="Remote host to connect to")
     parser.add_argument('port', type=int, help="UDP port number to connect to")
     args = parser.parse_args()
-    sender = Sender(args.host, args.port, MAX_WINDOW_SIZE)
+    rtt_estimator = RttEstimator(
+        DEFAULT_RTO_SECOND, DEFAULT_RTT_SECOND, RTT_SMOOTHING_FACTOR, RTO_RTT_MULTIPLER)
+    sender = Sender(args.host, args.port, MAX_WINDOW_SIZE, rtt_estimator)
     sender.run()

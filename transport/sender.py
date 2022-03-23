@@ -3,21 +3,24 @@ import json
 import select
 import sys
 import time
-from transport.configs import DATA_SIZE, STARTING_SEQ_NUMBER, DEFAULT_RTT_SECOND
+from transport.configs import DATA_SIZE, STARTING_SEQ_NUMBER, DEFAULT_RTO_SECOND
 from transport.datagram import MessageDatagram, AckDatagram
 from typing import List
+from transport.rtt_estimator import RttEstimator
 
 from transport.utils import decode_bytes_to_json
 
 
 class Sender:
-    def __init__(self, host, port, max_window_size):
+    def __init__(self, host, port, max_window_size, rtt_estimator):
         self.host = host
         self.remote_port = int(port)
+        self.max_window_size = max_window_size
+        self.rtt_estimator: RttEstimator = rtt_estimator
+
         self.log("Sender starting up using port %s" % self.remote_port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('0.0.0.0', 0))
-        self.max_window_size = max_window_size
         self.send_queue: List[MessageDatagram] = []
         self.send_buffer: List[MessageDatagram] = []
         self.seq_number = STARTING_SEQ_NUMBER
@@ -74,10 +77,9 @@ class Sender:
                 datagram = MessageDatagram(data, self._get_seq_number())
                 self.send_buffer.append(datagram)
 
-    @staticmethod
-    def _should_send_msg_datagram(msg_datagram: MessageDatagram):
+    def _should_send_msg_datagram(self, msg_datagram: MessageDatagram):
         # send a datagram if not send before or if expires
-        return msg_datagram.send_time is None or time.time() > msg_datagram.send_time + DEFAULT_RTT_SECOND
+        return msg_datagram.send_time is None or time.time() > msg_datagram.send_time + self.rtt_estimator.smoothed_rto_seconds
 
     def run(self):
         while True:
