@@ -42,8 +42,15 @@ class Sender:
             'utf-8'), (self.host, self.remote_port))
 
     def _remove_send_queue_by_seq_num(self, seq_num):
-        self.send_queue = list(filter(lambda msg_datagram: msg_datagram.seq_number !=
-                                      seq_num, self.send_queue))
+        delete_ix = None
+        removed_datagram = None
+        for ix, message_datagram in enumerate(self.send_queue):
+            if message_datagram.seq_number == seq_num:
+                delete_ix = ix
+                removed_datagram = message_datagram
+        if delete_ix is not None:
+            self.send_queue.pop(delete_ix)
+        return removed_datagram
 
     def should_terminate_sending(self):
         return self.should_terminate and len(self.send_buffer) == 0 and len(self.send_queue) == 0
@@ -61,8 +68,12 @@ class Sender:
                         self.log(
                             f"Received acknowledgement message {ack_datagram.seq_number}")
                         # remove message_datagram from send queue based on seq number
-                        self._remove_send_queue_by_seq_num(
+                        deleted_msg_datagram: MessageDatagram = self._remove_send_queue_by_seq_num(
                             ack_datagram.seq_number)
+                        # update the rtt estimator
+                        if deleted_msg_datagram is not None:
+                            self.rtt_estimator.add_new_rtt_entry(
+                                deleted_msg_datagram)
                     else:
                         self.log(
                             f"Received corrupted acknowledgement message {ack_datagram.seq_number}")
