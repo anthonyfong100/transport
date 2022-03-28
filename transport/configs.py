@@ -3,8 +3,8 @@ STARTING_SEQ_NUMBER = 0
 
 
 # hyper parameters for window size
-MAX_WINDOW_SIZE = 4
-INITAL_WINDOW_SIZE = 1
+MAX_WINDOW_SIZE = 8
+INITAL_WINDOW_SIZE = 2
 
 # RTO_RTT_MULTIPLER is the multipler to determine retransmission time out (DEFAULT_RTO_SECOND) from round trip time (DEFAULT_RTT_SECOND)
 # default RTT_SECOND (round trip time) assumed to be 0.5 seconds
