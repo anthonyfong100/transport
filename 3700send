@@ -2,8 +2,9 @@
 
 import argparse
 from transport.sender import Sender
-from transport.configs import MAX_WINDOW_SIZE, DEFAULT_RTT_SECOND, DEFAULT_RTO_SECOND, RTO_RTT_MULTIPLER, RTT_SMOOTHING_FACTOR
+from transport.configs import INITAL_WINDOW_SIZE, MAX_WINDOW_SIZE, DEFAULT_RTT_SECOND, DEFAULT_RTO_SECOND, RTO_RTT_MULTIPLER, RTT_SMOOTHING_FACTOR
 from transport.rtt_estimator import RttEstimator
+from transport.congestion_window_estimator import CongestionWindowEstimator
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='send data')
@@ -12,5 +13,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     rtt_estimator = RttEstimator(
         DEFAULT_RTO_SECOND, DEFAULT_RTT_SECOND, RTT_SMOOTHING_FACTOR, RTO_RTT_MULTIPLER)
-    sender = Sender(args.host, args.port, MAX_WINDOW_SIZE, rtt_estimator)
+    congestion_estimator: CongestionWindowEstimator = CongestionWindowEstimator(
+        INITAL_WINDOW_SIZE, MAX_WINDOW_SIZE)
+    sender = Sender(args.host, args.port, MAX_WINDOW_SIZE,
+                    rtt_estimator, congestion_estimator)
     sender.run()

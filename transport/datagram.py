@@ -1,5 +1,6 @@
 from typing import Optional
 import hashlib
+import time
 
 
 class MessageDatagram:
@@ -31,6 +32,9 @@ class MessageDatagram:
     @staticmethod
     def is_valid_serialized_message(payload: dict) -> bool:
         return "data" in payload and "seq_number" in payload and "checksum" in payload and payload["type"] == "msg"
+
+    def is_timeout(self, rto_seconds: int) -> bool:
+        return time.time() > self.send_time + rto_seconds
 
 
 class AckDatagram:
