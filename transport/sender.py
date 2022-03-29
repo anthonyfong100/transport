@@ -29,9 +29,9 @@ class Sender:
         self.log("Sender starting up using port %s" % self.remote_port)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(('0.0.0.0', 0))
-        # send queue is the messages which are currently being sent
+        # send queue is the messages which are currently being sent in the udp sockets
         self.send_queue: List[MessageDatagram] = []
-        # send buffer stores all messages that need to be sent in the future
+        # send buffer stores all messages that need to be sent in the future (populated from the command line, reads input from the command line, it then adds it to the send buffer, the send queue will then populate from the send buffer)
         self.send_buffer: List[MessageDatagram] = []
         self.seq_number = STARTING_SEQ_NUMBER
         self.should_terminate = False
@@ -51,6 +51,7 @@ class Sender:
         self.socket.sendto(json.dumps(msg_datagram.serialize()).encode(
             'utf-8'), (self.host, self.remote_port))
 
+    # searchs through the send queue and finds the packet with the matching seq num to remove
     def _remove_send_queue_by_seq_num(self, seq_num):
         delete_ix = None
         removed_datagram = None
