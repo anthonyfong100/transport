@@ -27,9 +27,11 @@ class Receiver:
         sys.stderr.write(message + "\n")
         sys.stderr.flush()
 
+    # checks whether or not it is a duplicate message, the netowrk is configured to have duplicate messages.
     def is_duplicate_message(self, seq_num: int) -> bool:
         return seq_num in self.received_message_datagrams
 
+    # implementing the fact that we need to print the message in sequential order. It waits until the next message is in and then it starts printing.
     def _print_message_datagram_in_order(self) -> None:
         while self.current_seq_number in self.received_message_datagrams:
             curr_datagram: MessageDatagram = self.received_message_datagrams[
@@ -37,6 +39,7 @@ class Receiver:
             print(curr_datagram.data, end='', flush=True)
             self.current_seq_number += 1
 
+    # waiting for if a socket receives a message
     def wait_and_read_socket(self) -> MessageDatagram:
         socks = select.select([self.socket], [], [])[0]
         for conn in socks:
@@ -71,6 +74,7 @@ class Receiver:
                 ack_datagram: AckDatagram = AckDatagram(
                     message_datagram.seq_number)
 
+                # aslong as the msg is not corrupted, we will send an acknowledgement
                 if not self.is_duplicate_message(message_datagram.seq_number):
                     self.received_message_datagrams[message_datagram.seq_number] = message_datagram
 
@@ -79,4 +83,5 @@ class Receiver:
                     f"Sending acknowledgement message {ack_datagram.seq_number}")
                 self.send(ack_datagram)
 
+            # keeps searching if the next seq number is coming, and if it does it prints it out
             self._print_message_datagram_in_order()

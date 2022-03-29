@@ -1,2 +1,16 @@
-# transport
-Implementation of a simple transport layer of TCP using UDP. This project is done for CS3700 Network and distributed computing in Northeastern University
+# Transport
+Implementation of a simple transport layer of TCP using UDP. This project is done for CS3700 Network and distributed computing in Northeastern University. By Justin Viasus and Anthony Fong.
+
+We structured our code by creating core classes such as: congestion_window_estimator, datagram, receiver, rtt_estimator, and sender. 
+
+Our congestion_window_estimator file handles the modification of the window size by following the TCP pseudocode algorithm listed in the Transport slides.
+
+Within the sender class, we implemented a send buffer and send queue. The send queue represents the messages which are currenly being sent in the udp sockets. The send buffer stores all messages that need to be sent in the future. It is populated from the command line and when data is added to it, the send queue is then populated. A key function that we implemented was remove_send_queue_by_seq_num() in which it searches through the send queue and finds the packet with the matching sequence number to remove. This was called whenever the acknowledged datagram was received and not corrupted.
+
+We implemented the rtt_estimator in way such that it is easily extensible. If we wanted to (attempt to) increase performance, we could overwrite the two functions in the rtt_estimator class. The two functions included compute_smoothed_rtt which uses the smoothing algorithm and add_new_rtt_entry which computed the smoothed_rtt_seconds and smoothed_rto_seconds.
+
+In the receiver class, it helped to have a function, is_duplicate_message, that checks whether or not a message is a duplicated because the network was configured to send duplicates. We also have a function, _print_message_datagram_in_order, that prints the messages in sequential order. It waits until the next message is in and then begins printing. Our wait_and_read_socket waits for if a message is received on a socket. Within the run function we keep searching if the next sequence number is coming, and if it does, its prints it out. Also, aslong as the message is not currupted, we send an acknowledgement.
+
+A key factor of the datagram class is the checksum which applies an MD5 hash to the message and sends it along with the data. On the receiving end, it is checking whether the message is corrupted or if some of the data packets got lost. We also had seq_number which allowed us to know which frame was being acknowledged in an acknowledgement and send_time which let us know when it has timed out.
+
+One challenge we faced was passing the 8-2 test for performance completely. To fix this and receive full points, we tried adjusting the initial window size and maximum window size parameters. We initially started with values of 1 and 4 respectively. We then tried different combinations such as 1 and 6, 1 and 8, 2 and 4, 2 and 8 respectively to see if it boosts the performance. We tested our code by running the test scripts and examining the log outputs for each test. We tested the performance by submitting to gradescope and inspecting which tests we lost points on for low performance and the auto-grader output.
